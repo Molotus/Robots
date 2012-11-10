@@ -1,0 +1,226 @@
+
+
+;============================		============================================
+				;POGA
+  (require :asdf)
+  (asdf:operate 'asdf:load-op :usocket)
+  (setf f 1)
+  (setf b 2)
+  (setf l 3)
+  (setf r 4)
+  (setf s 5)
+
+  (let ((maingr (make-hash-table :test #'equal))
+     (group (make-hash-table :test #'equal))
+     (robo (make-hash-table :test #'equal)) 
+	(fg 1) (a 0) (c 0))
+
+(defvar *my-node-address* "127.0.0.1")
+(defvar *my-node-port* 2356)
+
+		;----------elemental commands-------------------
+
+  (defun robo-add (inf name)
+    (if (eql (nth-value 1 (gethash name maingr)) nil)
+	(setf (gethash name maingr) inf)
+	(setf fg 0)))
+
+(defun robo-Del (name)
+  (if (eql (nth-value 1 (gethash name maingr)) nil)
+      (setf fg 0)
+	(remhash name maingr)))
+
+(defun InfoRo ()
+  (progn
+    (format t "you all works robots~&")
+    (maphash #'(lambda (k v) (format t "group: ~A name: ~A~&" v k)) maingr)))
+
+(defun addgr (name gr)
+  (if (eql (nth-value 1 (gethash name maingr)) nil)
+      (setf v 0)
+      (if (find gr (nth-value 0 (gethash name maingr)))
+	  (format t "group ~A already exist" gr)
+	  (progn
+	    (setf val (nth-value 0 (gethash name maingr)))
+	    (push gr val)
+	    (remhash name maingr) (setf (gethash name maingr) val)))))
+
+(defun unitegr (gr1 gr2 gr3)
+  (maphash #'(lambda (k v) 
+	       (when (or (find gr1 v) (find gr2 v))
+		   (setf  (gethash k maingr) (push gr3 v)))) maingr))
+		  
+(defun del-gr (gr)
+  (maphash #'(lambda (k v) (when (find gr v)
+			     (setf (gethash k maingr)(delete gr v)))) maingr))
+
+(defun del-rfg (gr name)
+(if (eql (nth-value 1 (gethash name maingr)) nil)
+      (setf fg 0)
+ 	(maphash #'(lambda (k v) (when (eql k name)
+			    (setf (gethash k maingr)(delete gr v)))) maingr)))
+			    			     
+(defun inf-robo (name)
+  (if (eql (nth-value 1 (gethash name maingr)) nil)
+      (setf fg 0)
+      (progn
+	(setf lstgr (nth-value 0 (gethash name maingr)))  
+	(format t "groups: ~a  name: ~a" lstgr name))))
+
+(defun inf-gr (gr)
+  (setf lstro nil)
+  (maphash #'(lambda (k v) (when (find gr v)
+			       (push k lstro))) maingr)
+  (if (equalp lstro nil)
+      (setf fg 0)
+      lstro))
+
+		;--------------end elemental comand---------------
+	        ;--------------group------------------------------
+
+
+(defun gr-add (missing gr)
+    (if (eql (nth-value 1 (gethash gr group)) nil)
+	(setf (gethash gr group) missing)
+	(setf fg 0)))
+
+(defun gr-Del (gr)
+  (if (eql (nth-value 1 (gethash gr group)) nil)
+      (setf fg 0)
+	(remhash gr group)))
+
+(defun Infogr ()
+  (progn
+    (format t "you all groups~&")
+    (maphash #'(lambda (k v) (format t "group: ~A name: ~A~&" v k)) group)))
+
+(defun inf-mis (gr)
+  (setf lstgr nil)
+  (maphash #'(lambda (k v) (when (equalp gr k)
+			       (setf lstgr v))) group)
+  (if (equalp lstgr nil)
+      (setf fg 0)
+      (setf lst lstgr)))
+
+ 		;-----------------end group---------------------------
+		;-----------------robots------------------------------
+(defun rb-add (missing name)
+    (if (eql (nth-value 1 (gethash name robo)) nil)
+	(setf (gethash name robo) missing)
+	(format t "robot with this name: ~A already add" name)))
+	;(setf fg 0)))
+
+(defun rb-Del (name)
+  (if (eql (nth-value 1 (gethash name robo)) nil)
+      (setf fg 0)
+	(remhash name robo)))
+
+(defun count-r (missing)
+        (progn
+	(setf c 0) (setf a 0)
+	(maphash #'(lambda (k v)
+		 (when (equalp missing v)(setf c (+ c 1))))robo))
+		 (setf a c))
+
+(defun Inf-romis ()
+  (progn
+    (format t "you all free robots~&")
+    (maphash #'(lambda (k v) (format t "missing: ~A name: ~A~&" v k)) robo)))
+
+		;-------------------end robots-------------------------------
+		;-------------------protocol---------------------------------
+
+(defun un-gr (gr1 gr2 gr3)
+	(if (equalp (nth-value 0 (gethash gr1 group)) (nth-value 0 (gethash gr2 group)))
+		(progn
+		(unitegr gr1 gr2 gr3)
+		(gr-add (inf-mis (list gr1)) (list gr3)))
+	(format t "error")))
+
+
+(defun decline (par)
+  (if (equalp par "all")
+	(progn
+      	(maphash #' (lambda (k v)
+			(progn 
+			(setf lst v)
+		      	(rb-add (inf-mis (list (car lst))) k) (robo-del k))) maingr)
+	(maphash #' (lambda (k v)
+			(gr-del k)) group))
+(format t "parameters bad")))
+
+
+
+(defun select (cnt gr missing)
+       (if (<= cnt (count-r missing))
+	   (progn
+	     (gr-add missing gr)
+	     (maphash #' (lambda (k v)
+			   (progn 
+			 	(when (and (> cnt 0)(equalp missing v)) 
+				(progn
+				(robo-add gr k) (rb-del k) (setf cnt (- cnt 1)))))) robo))
+				 
+	  (format t "no ~A robots wich can work with ~A" cnt missing)))
+
+(defun move (gr par)
+  (case par
+    (1 
+     (progn
+        (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+	(format t "~& group ~A STOP" gr))
+       (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "forward")) (inf-gr gr))     
+       (format t "~& group ~A move forward" gr))))
+    (2
+     (progn
+	(mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+	(format t "~& group ~A STOP" gr))
+       (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "backward")) (inf-gr gr))                     
+       (format t "~& group ~A move backward" gr))))
+    (3
+     (progn
+	(mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+	(format t "~& group ~A STOP" gr))
+       (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "left")) (inf-gr gr))
+       (format t "~& group ~A move left" gr))))
+    (4
+     (progn 
+	(mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+	(format t "~& group ~A STOP" gr))
+       (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "right")) (inf-gr gr))
+       (format t "~& group ~A move right" gr))))
+    (5
+     (progn
+	(mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+	(format t "~& group ~A STOP" gr))
+       (mapcar #' (lambda (x) (answer-for-server (127.0.0.1 "stop")) (inf-gr gr))
+       (format t "~& group ~A STOP" gr))))
+    (format t "no this parametr"))))
+
+
+
+
+==============    test
+
+
+(rb-add '(find patrol) 'skayt)
+(rb-add '(patrol) 'killer)
+(rb-add '(find patrol) 'kot)
+(rb-add '(find patrol) 'zergling)
+(inf-romis)
+(count-r '(find patrol))
+(select 10 '(g1) '(find patrol))
+(select 2  '(g1) '(find patrol))
+(select 1  '(g2) '(find patrol))
+(infogr)
+(inf-romis)
+(inforo)
+(move 'g1 f)
+(move 'g1 b)
+(move 'g1 s)
+(move 'g1 r)
+(move 'g1 l)
+
+
+
+;github.com
